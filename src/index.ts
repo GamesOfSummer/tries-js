@@ -5,6 +5,8 @@ import {
     validateFxn,
 } from './helpers.js';
 
+import { CITY_NAMES } from './data.js';
+
 const NO_ONE = 0;
 const BY_A = 1;
 const BY_B = 2;
@@ -16,6 +18,54 @@ interface Coordinate {
     x: number;
     y: number;
 }
+
+class Node {
+    children: Node[];
+    terminus: boolean;
+    value: string;
+
+    constructor(string) {
+        this.children = [];
+        this.terminus = false;
+        this.value = string[0] || '';
+        if (string.length > 1) {
+            this.children.push(new Node(string.substr(1)));
+        } else {
+            this.terminus = true;
+        }
+    }
+
+    add(data: string) {
+        const value = data[0];
+        const next = data.substr(1);
+
+        for (let i = 0; i < this.children.length; i++) {
+            const child = this.children[i];
+
+            if (child.value === value) {
+                if (next) {
+                    child.add(next);
+                } else {
+                    child.terminus = true;
+                }
+            }
+        }
+    }
+    complete(string) {
+        return [];
+    }
+}
+
+const createTrie = (words: string[]) => {
+    const root = new Node('');
+
+    for (let i = 0; i < words.length; i++) {
+        const word: string = words[i];
+        root.add(word.toLowerCase());
+    }
+
+    return root;
+};
 
 function generateVisitedObjectArray(maze): Coordinate[] {
     const visited = [];
@@ -39,126 +89,18 @@ function generateVisitedObjectArray(maze): Coordinate[] {
     return visited;
 }
 
-function findShortestPathLength(maze: number[][], [xA, yA], [xB, yB]) {
-    const visited: Coordinate[] = generateVisitedObjectArray(maze);
-    // console.log(generateVisitedObjectArray(maze));
-
-    visited[yA][xA].openedBy = BY_A;
-    visited[yB][xB].openedBy = BY_B;
-
-    let aQueue = [visited[yA][xA]];
-    let bQueue = [visited[yB][xB]];
-    let iteration = 0;
-
-    let aNeighbors = [];
-    let bNeighbors = [];
-
-    while (aQueue.length && bQueue.length) {
-        iteration++;
-
-        //z8888888888888 a
-        while (aQueue.length) {
-            const coordinate: Coordinate = aQueue.shift();
-            aNeighbors = aNeighbors.concat(
-                getNeighbors(visited, coordinate.x, coordinate.y)
-            );
-        }
-
-        for (let i = 0; i < aNeighbors.length; i++) {
-            const neighbor: Coordinate = aNeighbors[i];
-
-            if (neighbor.openedBy === BY_B) {
-                return neighbor.length + iteration;
-            } else if (neighbor.openedBy === NO_ONE) {
-                neighbor.length = iteration;
-                neighbor.openedBy = BY_A;
-                aQueue.push(neighbor);
-            }
-        }
-
-        //z8888888888888 b
-        while (bQueue.length) {
-            const coordinate: Coordinate = bQueue.shift();
-            bNeighbors = bNeighbors.concat(
-                getNeighbors(visited, coordinate.x, coordinate.y)
-            );
-        }
-
-        for (let i = 0; i < bNeighbors.length; i++) {
-            const neighbor: Coordinate = bNeighbors[i];
-
-            if (neighbor.openedBy === BY_A) {
-                return neighbor.length + iteration;
-            } else if (neighbor.openedBy === NO_ONE) {
-                neighbor.length = iteration;
-                neighbor.openedBy = BY_B;
-                bQueue.push(neighbor);
-            }
-        }
-    }
-
-    return -1;
-}
-
-const getNeighbors = (visited: Coordinate[], x: number, y: number) => {
-    const neighbors = [];
-
-    if (canGoLeft(visited, x, y)) {
-        neighbors.push(visited[y - 1][x]);
-    }
-
-    if (canGoRight(visited, x, y)) {
-        neighbors.push(visited[y + 1][x]);
-    }
-
-    if (canGoUp(visited, x, y)) {
-        neighbors.push(visited[y][x - 1]);
-    }
-
-    if (canGoDown(visited, x, y)) {
-        neighbors.push(visited[y][x + 1]);
-    }
-
-    return neighbors;
-};
-
-const canGoLeft = (visited: Coordinate[], x: number, y: number) => {
-    return y - 1 >= 0 && !visited[y - 1][x].closed;
-};
-
-const canGoRight = (visited: Coordinate[], x: number, y: number) => {
-    return y + 1 < visited[0].length && !visited[y + 1][x].closed;
-};
-
-const canGoUp = (visited: Coordinate[], x: number, y: number) => {
-    return x - 1 >= 0 && !visited[y][x - 1].closed;
-};
-
-const canGoDown = (visited: Coordinate[], x: number, y: number) => {
-    return x + 1 < visited.length && !visited[y][x + 1].closed;
-};
-
 consoleStart();
 
-const fourByFour = [
-    [2, 0, 0, 0],
-    [0, 0, 0, 0],
-    [0, 0, 0, 0],
-    [0, 0, 0, 2],
-];
+const root = createTrie(CITY_NAMES.slice(0, 10));
+const completions = root.complete('san');
 
-validateFxn(findShortestPathLength(fourByFour, [0, 0], [3, 3]), 6);
+validateFxn(completions.length, 3);
 
-const sixBySix = [
-    [0, 0, 0, 0, 0, 0],
-    [0, 2, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0],
-    [0, 1, 1, 1, 1, 1],
-    [0, 0, 0, 0, 0, 0],
-    [0, 0, 2, 0, 0, 0],
-];
-
-validateFxn(findShortestPathLength(sixBySix, [1, 1], [2, 5]), 7);
+//   expect(completions.length).toBe(3);
+//   expect(
+//     _.intersection(completions, ["san antonio", "san diego", "san jose"])
+//       .length
+//   ).toBe(3);
 
 consoleEnd();
 consoleBuffer();
