@@ -48,11 +48,44 @@ class Node {
                 } else {
                     child.terminus = true;
                 }
+
+                return;
             }
         }
+
+        this.children.push(new Node(data));
     }
-    complete(string) {
-        return [];
+    complete(data: string) {
+        let completions = [];
+
+        for (let i = 0; i < this.children.length; i++) {
+            const child = this.children[i];
+            completions = completions.concat(
+                child._childComplete(data, '', [])
+            );
+        }
+
+        return completions;
+    }
+
+    _childComplete(search, built, suggestions) {
+        if (suggestions.length >= 3 || (search && search[0] !== this.value)) {
+            return suggestions;
+        }
+
+        if (this.terminus) {
+            suggestions.push(`${built}${this.value}`);
+        }
+
+        this.children.forEach((child) =>
+            child._childComplete(
+                search.substr(1),
+                `${built}${this.value}`,
+                suggestions
+            )
+        );
+
+        return suggestions;
     }
 }
 
@@ -66,28 +99,6 @@ const createTrie = (words: string[]) => {
 
     return root;
 };
-
-function generateVisitedObjectArray(maze): Coordinate[] {
-    const visited = [];
-
-    for (let y = 0; y < maze.length; y++) {
-        const yAxis = [];
-        for (let x = 0; x < maze[y].length; x++) {
-            const coordinate: Coordinate = {
-                closed: maze[y][x] === 1,
-                length: 0,
-                openedBy: NO_ONE,
-                x: x,
-                y: y,
-            };
-
-            yAxis.push(coordinate);
-        }
-        visited.push(yAxis);
-    }
-
-    return visited;
-}
 
 consoleStart();
 
